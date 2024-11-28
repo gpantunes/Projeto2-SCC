@@ -36,7 +36,6 @@ import tukano.api.User;
 import tukano.impl.data.Following;
 import tukano.impl.data.Likes;
 import tukano.impl.rest.TukanoRestServer;
-import utils.CosmosDB;
 import utils.DB;
 import utils.RedisCache;
 
@@ -48,12 +47,6 @@ public class JavaShorts implements Shorts {
 
     // flags para definir o que se vai utilizar
     private static final boolean cacheOn = TukanoRestServer.cacheOn;
-    private static final boolean sqlOn = TukanoRestServer.sqlOn;
-
-    //Gets instances for the different containers
-    private static final CosmosDB CosmosDBShorts = CosmosDB.getInstance("shorts");
-    private static final CosmosDB CosmosDBFollowers = CosmosDB.getInstance("followers");
-    private static final CosmosDB CosmosDBLikes = CosmosDB.getInstance("likes");
 
     synchronized public static Shorts getInstance() {
         if (instance == null) {
@@ -78,14 +71,9 @@ public class JavaShorts implements Shorts {
 
             var shrt = new Short(shortId, userId, blobUrl);
 
-            Result<Short> shortDb;
+            Result<Short> shortDb = DB.insertOne(shrt);
 
-            if (sqlOn)
-                shortDb = DB.insertOne(shrt);
-            else
-                shortDb = CosmosDBShorts.insertOne(shrt);
-
-            if (shortDb.isOK() && cacheOn)
+            if (cacheOn)
                 this.putInCache(shrt.getShortId(), shrt.toString());
 
             return errorOrValue(shortDb,
@@ -105,10 +93,7 @@ public class JavaShorts implements Shorts {
         Result<Short> shortRes;
         Result<List<Long>> like;
 
-        var query = format("SELECT VALUE COUNT(l.shortId) FROM likes l WHERE l.shortId = '%s'", shortId);
-
-        if (sqlOn)
-            query = format("SELECT COUNT(l.shortId) FROM \"likes\" l WHERE l.shortId = '%s'", shortId);
+        var query = format("SELECT COUNT(l.shortId) FROM \"likes\" l WHERE l.shortId = '%s'", shortId);
 
         like = (Result<List<Long>>) this.tryQuery(query, "likes",
                 Long.class);
@@ -119,23 +104,14 @@ public class JavaShorts implements Shorts {
 
         } else {
 
-            if (sqlOn) {
+            shortRes = errorOrValue(DB.getOne(shortId, Short.class),
+                    shrt -> shrt.copyWithLikes_And_Token(like.value().get(0)));
 
-                shortRes = errorOrValue(DB.getOne(shortId, Short.class),
-                        shrt -> shrt.copyWithLikes_And_Token(like.value().get(0)));
-
-            } else {
-
-                shortRes = errorOrValue(CosmosDBShorts.getOne(shortId, Short.class),
-                        shrt -> shrt.copyWithLikes_And_Token(like.value().get(0)));
-
-            }
         }
         return shortRes;
 
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public Result<Void> deleteShort(String shortId, String password) {
         Log.info(() -> format("deleteShort : shortId = %s, pwd = %s\n", shortId, password));
@@ -144,41 +120,19 @@ public class JavaShorts implements Shorts {
 
             return errorOrResult(okUser(shrt.getOwnerId(), password), user -> {
 
-                if (sqlOn) {
-                    return DB.transaction(hibernate -> {
-
-                        hibernate.remove(shrt);
-                        var query = format("DELETE FROM \"likes\" l WHERE l.shortId = '%s'", shortId);
-                        hibernate.createNativeQuery(query, Likes.class).executeUpdate();
-
-                    });
-                } else {
-
-                    var query = format("SELECT * FROM likes l WHERE l.shortId = '%s'", shortId);
-
-                    if (sqlOn)
-                        query = format("SELECT * FROM \"likes\" l WHERE l.shortId = '%s'", shortId);
-
-                    Result<List<Likes>> result1 = (Result<List<Likes>>) this.tryQuery(query, "likes", Likes.class);
-
-                    for (Likes l : result1.value()) {
-                        Result<Likes> like2 = (Result<Likes>) CosmosDBLikes.deleteOne(l);
-
-                        if (like2.isOK() && cacheOn)
-                            this.delInCache(l.getUserId() + "_" + shortId);
-                    }
-
-                    // Delete the short
-                    CosmosDBShorts.deleteOne(shrt);
-                }
-
                 if (cacheOn)
                     this.delInCache(shortId);
 
                 // Delete associated blob
                 JavaBlobs.getInstance().delete(shrt.getShortId(), Token.get());
 
-                return ok();
+                return DB.transaction(hibernate -> {
+
+                    hibernate.remove(shrt);
+                    var query = format("DELETE FROM \"likes\" l WHERE l.shortId = '%s'", shortId);
+                    hibernate.createNativeQuery(query, Likes.class).executeUpdate();
+
+                });
 
             });
         });
@@ -189,13 +143,9 @@ public class JavaShorts implements Shorts {
     public Result<List<String>> getShorts(String userId) {
         Log.info(() -> format("getShorts : userId = %s\n", userId));
 
-        List<String> dataDB;
         List<String> l = new ArrayList<>();
 
-        var query = format("SELECT VALUE s.id FROM shorts s WHERE s.ownerId = '%s'", userId);
-
-        if (sqlOn)
-            query = format("SELECT s.shortId FROM \"short\" s WHERE s.ownerId = '%s'", userId);
+        var query = format("SELECT s.shortId FROM \"short\" s WHERE s.ownerId = '%s'", userId);
 
         Result<List<String>> data = (Result<List<String>>) this.tryQuery(query, "shorts",
                 String.class);
@@ -209,7 +159,6 @@ public class JavaShorts implements Shorts {
 
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public Result<Void> follow(String userId1, String userId2, boolean isFollowing, String password) {
         Log.info(() -> format("follow : userId1 = %s, userId2 = %s, isFollowing = %s, pwd = %s\n", userId1, userId2,
@@ -228,21 +177,16 @@ public class JavaShorts implements Shorts {
 
                 if (isFollowing) {
 
-                    if (sqlOn)
-                        resDB = DB.insertOne(f);
-                    else
-                        resDB = CosmosDBFollowers.insertOne(f);
+                    resDB = DB.insertOne(f);
 
-                    if (resDB.isOK() && cacheOn)
+                    if (cacheOn)
                         this.putInCache(userId1 + ":" + userId2, f.toString());
 
                 } else {
-                    if (sqlOn)
-                        resDB = DB.deleteOne(f);
-                    else
-                        resDB = (Result<Following>) CosmosDBFollowers.deleteOne(f);
 
-                    if (resDB.isOK() && cacheOn)
+                    resDB = DB.deleteOne(f);
+
+                    if (cacheOn)
                         this.delInCache(userId1 + ":" + userId2);
 
                 }
@@ -258,10 +202,7 @@ public class JavaShorts implements Shorts {
     public Result<List<String>> followers(String userId, String password) {
         Log.info(() -> format("followers : userId = %s, pwd = %s\n", userId, password));
 
-        var query = format("SELECT VALUE f.follower FROM followers f WHERE f.followee = '%s'", userId);
-
-        if (sqlOn)
-            query = format("SELECT f.follower FROM \"followers\" f WHERE f.followee = '%s'", userId);
+        var query = format("SELECT f.follower FROM \"followers\" f WHERE f.followee = '%s'", userId);
 
         Result<List<String>> data = (Result<List<String>>) this.tryQuery(query, "followers",
                 String.class);
@@ -270,7 +211,6 @@ public class JavaShorts implements Shorts {
 
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public Result<Void> like(String shortId, String userId, boolean isLiked, String password) {
         Log.info(() -> format("like : shortId = %s, userId = %s, isLiked = %s, pwd = %s\n", shortId, userId, isLiked,
@@ -287,20 +227,15 @@ public class JavaShorts implements Shorts {
                 Result<Likes> resDB;
 
                 if (isLiked) {
-                    if (sqlOn)
-                        resDB = DB.insertOne(l);
-                    else
-                        resDB = CosmosDBLikes.insertOne(l);
+
+                    resDB = DB.insertOne(l);
 
                     if (resDB.isOK())
                         this.putInCache(userId + "_" + shortId, l.toString());
 
                 } else {
 
-                    if (sqlOn)
-                        resDB = DB.deleteOne(l);
-                    else
-                        resDB = (Result<Likes>) CosmosDBLikes.deleteOne(l);
+                    resDB = DB.deleteOne(l);
 
                     if (resDB.isOK())
                         this.delInCache(userId + "_" + shortId);
@@ -320,10 +255,7 @@ public class JavaShorts implements Shorts {
 
         return errorOrResult(getShort(shortId), shrt -> {
 
-            var query = format("SELECT VALUE l.userId FROM likes l WHERE l.shortId = '%s'", shortId);
-
-            if (sqlOn)
-                query = format("SELECT l.userId FROM \"likes\" l WHERE l.shortId = '%s'", shortId);
+           var query = format("SELECT l.userId FROM \"likes\" l WHERE l.shortId = '%s'", shortId);
 
             Result<List<String>> data = (Result<List<String>>) this.tryQuery(query, "likes",
                     String.class);
@@ -340,20 +272,14 @@ public class JavaShorts implements Shorts {
 
         List<String> l = new ArrayList<>();
 
-        var query1 = format("SELECT * FROM shorts s WHERE s.ownerId = '%s'", userId);
-
-        if (sqlOn)
-            query1 = format("SELECT * FROM \"short\" s WHERE s.ownerId = '%s'", userId);
+        var query1 = format("SELECT * FROM \"short\" s WHERE s.ownerId = '%s'", userId);
 
         Result<List<Short>> data = (Result<List<Short>>) this.tryQuery(query1, "shorts", Short.class);
 
         for (Short shrt : data.value())
             l.add("ShortId: " + shrt.getShortId() + " TimeStamp: " + shrt.getTimestamp());
 
-        var query2 = format("SELECT VALUE f.followee FROM followers f WHERE  f.follower = '%s'", userId);
-
-        if (sqlOn)
-            query2 = format("SELECT f.followee FROM \"followers\" f WHERE  f.follower = '%s'", userId);
+        var query2 = format("SELECT f.followee FROM \"followers\" f WHERE  f.follower = '%s'", userId);
 
         Result<List<String>> data2 = (Result<List<String>>) this.tryQuery(query2, "followers",
                 String.class);
@@ -362,11 +288,7 @@ public class JavaShorts implements Shorts {
         for (String s : data2.value()) {
             Log.warning(s);
 
-            var query3 = format("SELECT * FROM shorts s WHERE s.ownerId = '%s' ORDER BY s.timestamp DESC",
-                    s);
-
-            if (sqlOn)
-                query3 = format("SELECT * FROM \"short\" s WHERE s.ownerId = '%s' ORDER BY s.timestamp DESC",
+            var query3 = format("SELECT * FROM \"short\" s WHERE s.ownerId = '%s' ORDER BY s.timestamp DESC",
                         s);
 
             Result<List<Short>> data3 = (Result<List<Short>>) this.tryQuery(query3, "shorts",
@@ -392,44 +314,31 @@ public class JavaShorts implements Shorts {
 
         // delete shorts
         Log.warning("Está a tentar apagar os shorts");
-        var query1 = format("SELECT * FROM shorts s WHERE s.ownerId = '%s'", userId);
-
-        if (sqlOn)
-            query1 = format("SELECT * FROM \"short\" s WHERE s.ownerId = '%s'", userId);
+        var query1 = format("SELECT * FROM \"short\" s WHERE s.ownerId = '%s'", userId);
 
         Result<List<Short>> data = (Result<List<Short>>) this.tryQuery(query1, "shorts",
                 Short.class);
 
         for (Short s : data.value()) {
-            Result<Short> shrt;
-            if (sqlOn)
-                shrt = (Result<Short>) DB.deleteOne(s);
-            else
-                shrt = (Result<Short>) CosmosDBShorts.deleteOne(s);
-            if (shrt.isOK() && cacheOn)
+            DB.deleteOne(s);
+
+            if (cacheOn)
                 this.delInCache(s.getShortId());
             Log.warning("Apagou 1 short");
         }
 
         // delete follows
         Log.warning("Está a tentar apagar os follows");
-        var query2 = format("SELECT * FROM followers f WHERE f.follower = '%s' OR f.followee = '%s'", userId,
-                userId);
-
-        if (sqlOn)
-            query2 = format("SELECT * FROM \"followers\" f WHERE f.follower = '%s' OR f.followee = '%s'", userId,
+        var query2 = format("SELECT * FROM \"followers\" f WHERE f.follower = '%s' OR f.followee = '%s'", userId,
                     userId);
 
         Result<List<Following>> data2 = (Result<List<Following>>) this.tryQuery(query2, "followers",
                 Following.class);
 
         for (Following f : data2.value()) {
-            Result<Following> fol;
-            if (sqlOn)
-                fol = (Result<Following>) DB.deleteOne(f);
-            else
-                fol = (Result<Following>) CosmosDBFollowers.deleteOne(f);
-            if (fol.isOK() && cacheOn)
+            DB.deleteOne(f);
+
+            if (cacheOn)
                 this.delInCache(f.getFollower() + ":" + f.getFollowee());
             Log.warning("Apagou 1 Follow");
         }
@@ -437,20 +346,14 @@ public class JavaShorts implements Shorts {
         // delete likes
         Log.warning("Está a tentar apagar os likes");
 
-        var query3 = format("SELECT * FROM likes l WHERE l.ownerId = '%s' OR l.userId = '%s'", userId, userId);
-
-        if (sqlOn)
-            query3 = format("SELECT * FROM \"likes\" l WHERE l.ownerId = '%s' OR l.userId = '%s'", userId, userId);
+        var query3 = format("SELECT * FROM \"likes\" l WHERE l.ownerId = '%s' OR l.userId = '%s'", userId, userId);
 
         Result<List<Likes>> data3 = (Result<List<Likes>>) this.tryQuery(query3, "likes", Likes.class);
 
         for (Likes l : data3.value()) {
-            Result<Likes> lik = (Result<Likes>) CosmosDBLikes.deleteOne(l);
-            if (sqlOn)
-                lik = (Result<Likes>) DB.deleteOne(l);
-            else
-                lik = (Result<Likes>) CosmosDBLikes.deleteOne(l);
-            if (lik.isOK() && cacheOn)
+            DB.deleteOne(l);
+
+            if (cacheOn)
                 this.delInCache(l.getUserId() + "_" + l.getShortId());
             Log.warning("Apagou 1 Like");
         }
@@ -581,10 +484,8 @@ public class JavaShorts implements Shorts {
                 byte[] dataOnCache = jedis.get(String.valueOf(query.hashCode()).getBytes());
 
                 if (dataOnCache == null) {
-                    if (sqlOn)
-                        data = Result.ok(DB.sql(query, clazz));
-                    else
-                        data = CosmosDB.getInstance(containerName).query(query, clazz);
+
+                    data = Result.ok(DB.sql(query, clazz));
 
                     if (data.isOK()) {
                         Log.info("Foi buscar os objetos à DB e colocou na cache");
@@ -603,11 +504,9 @@ public class JavaShorts implements Shorts {
             }
         } else {
             Log.info("Cache não está ativa");
-            if (sqlOn) {
-                data = Result.ok(DB.sql(query, clazz));
-            } else {
-                data = CosmosDBLikes.query(query, clazz);
-            }
+
+            data = Result.ok(DB.sql(query, clazz));
+
         }
         return data;
     }
@@ -628,14 +527,10 @@ public class JavaShorts implements Shorts {
                         shrt -> shrt.copyWithLikes_And_Token(like.value().get(0)));
             } else {
 
-                if (sqlOn) {
-                    shortRes = errorOrValue(DB.getOne(id, Short.class),
-                            shrt -> shrt.copyWithLikes_And_Token(like.value().get(0)));
-                } else
-                    shortRes = errorOrValue(CosmosDBShorts.getOne(id, Short.class),
-                            shrt -> shrt.copyWithLikes_And_Token(like.value().get(0)));
+                shortRes = errorOrValue(DB.getOne(id, Short.class),
+                        shrt -> shrt.copyWithLikes_And_Token(like.value().get(0)));
 
-                if (shortRes.isOK() && cacheOn) {
+                if (cacheOn) {
                     Short item = shortRes.value();
                     Log.info("%%%%%%%%%%%%%%%%%%% foi buscar ao cosmos " + item);
                     this.putInCache(id, item.toString());

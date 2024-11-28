@@ -1,6 +1,6 @@
 package utils;
 
-import java.io.File;
+//import java.io.File;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -23,7 +23,7 @@ import tukano.api.Result.ErrorCode;
 public class Hibernate {
 	// private static Logger Log = Logger.getLogger(Hibernate.class.getName());
 
-	private static final String HIBERNATE_CFG_FILE = "WEB-INF/classes/hibernate.cfg.xml";
+	//private static final String HIBERNATE_CFG_FILE = "WEB-INF/classes/hibernate.cfg.xml";
 	private SessionFactory sessionFactory;
 	private static Hibernate instance;
 

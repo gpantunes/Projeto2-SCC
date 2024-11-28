@@ -1,13 +1,13 @@
 package utils;
 
-import static tukano.api.Result.ok;
+//import static tukano.api.Result.ok;
 
-import redis.clients.jedis.Jedis;
+//import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
-import tukano.api.Result;
-import tukano.api.Result.ErrorCode;
-import tukano.api.Short;
+//import tukano.api.Result;
+//import tukano.api.Result.ErrorCode;
+//import tukano.api.Short;
 
 public class RedisCache {
 

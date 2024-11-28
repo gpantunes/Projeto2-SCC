@@ -8,7 +8,7 @@ import static tukano.api.Result.errorOrValue;
 import static tukano.api.Result.ErrorCode.BAD_REQUEST;
 import static tukano.api.Result.ErrorCode.FORBIDDEN;
 
-import static tukano.auth.Authentication.login;
+//import static tukano.auth.Authentication.login;
 
 //import java.util.Collection;
 import java.util.List;
@@ -19,11 +19,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import redis.clients.jedis.Jedis;
 import tukano.api.Result;
 import tukano.api.Result.ErrorCode;
-import tukano.auth.Authentication;
+//import tukano.auth.Authentication;
 import tukano.impl.rest.TukanoRestServer;
 import tukano.api.User;
 import tukano.api.Users;
-import utils.CosmosDB;
 import utils.DB;
 import utils.RedisCache;
 
@@ -31,15 +30,12 @@ public class JavaUsers implements Users {
 
 	private static Logger Log = Logger.getLogger(JavaUsers.class.getName());
 
-	private static final CosmosDB CosmosDBUsers = CosmosDB.getInstance("users");
-
 	private static Users instance;
 
 	// flags para definir o que se vai utilizar
 	private static final boolean cacheOn = TukanoRestServer.cacheOn;
-	private static final boolean sqlOn = TukanoRestServer.sqlOn;
 
-	private static final Authentication auth = new Authentication();
+	//private static final Authentication auth = new Authentication();
 
 	synchronized public static Users getInstance() {
 		if (instance == null)
@@ -59,12 +55,9 @@ public class JavaUsers implements Users {
 
 		Result<String> res;
 
-		if (sqlOn)
-			res = errorOrValue(DB.insertOne(user), user.getUserId());
-		else
-			res = errorOrValue(CosmosDBUsers.insertOne(user), user.getUserId());
+		res = errorOrValue(DB.insertOne(user), user.getUserId());
 
-		if (res.isOK() && cacheOn)
+		if (cacheOn)
 			this.putInCache(user.userId(), user.toString());
 
 		return res;
@@ -90,10 +83,7 @@ public class JavaUsers implements Users {
 				} else {
 					Result<User> userRes;
 
-					if (sqlOn)
-						userRes = validatedUserOrError(DB.getOne(userId, User.class), pwd);
-					else
-						userRes = validatedUserOrError(CosmosDBUsers.getOne(userId, User.class), pwd);
+					userRes = validatedUserOrError(DB.getOne(userId, User.class), pwd);
 
 					if (userRes.isOK()) {
 						User item = userRes.value();
@@ -102,7 +92,8 @@ public class JavaUsers implements Users {
 						Log.info("&&&&&&&&&&&&&&&&&& meteu no jedis");
 					}
 
-					userRes.setCookie(auth.login(userId, pwd)); // é preciso criar um objeto que junte o user e a cookie num tuplo para retornar Result<tuplo>
+					//userRes.setCookie(auth.login(userId, pwd)); // é preciso criar um objeto que junte o user e a cookie
+																// num tuplo para retornar Result<tuplo>
 					return userRes;
 				}
 
@@ -115,11 +106,7 @@ public class JavaUsers implements Users {
 		}
 
 		else {
-			if (sqlOn)
-				return validatedUserOrError(DB.getOne(userId, User.class), pwd);
-			else
-				return validatedUserOrError(CosmosDBUsers.getOne(userId, User.class), pwd);
-
+			return validatedUserOrError(DB.getOne(userId, User.class), pwd);
 		}
 	}
 
@@ -138,12 +125,9 @@ public class JavaUsers implements Users {
 
 		Result<User> userDB;
 
-		if (sqlOn)
-			userDB = DB.updateOne(newUser);
-		else
-			userDB = CosmosDBUsers.updateOne(newUser);
+		userDB = DB.updateOne(newUser);
 
-		if (userDB.isOK() && cacheOn)
+		if (cacheOn)
 			this.putInCache(userId, newUser.toString());
 
 		return errorOrResult(oldUser, user -> userDB);
@@ -165,10 +149,8 @@ public class JavaUsers implements Users {
 						JavaBlobs.getInstance().deleteAllBlobs(userId, Token.get(userId));
 						JavaShorts.getInstance().deleteAllShorts(userId, pwd, Token.get(userId));
 
-						if (sqlOn)
-							DB.deleteOne(user);
-						else
-							CosmosDBUsers.deleteOne(user);
+						DB.deleteOne(user);
+
 					}).start();
 
 					if (cacheOn)
@@ -192,15 +174,13 @@ public class JavaUsers implements Users {
 				Result<List<User>> data;
 
 				if (dataOnCache == null) {
-					if (sqlOn) {
-						query = String.format("SELECT * FROM \"user\" u WHERE UPPER(u.userId) LIKE '%%%s%%'",
-								pattern.toUpperCase());
-						data = ok(DB.sql(query, User.class)
-								.stream()
-								.map(User::copyWithoutPassword)
-								.toList());
-					} else
-						data = CosmosDBUsers.query(query, User.class);
+
+					query = String.format("SELECT * FROM \"user\" u WHERE UPPER(u.userId) LIKE '%%%s%%'",
+							pattern.toUpperCase());
+					data = ok(DB.sql(query, User.class)
+							.stream()
+							.map(User::copyWithoutPassword)
+							.toList());
 
 					Log.info("Foi buscar os users à CosmosDB");
 					if (data.isOK())
@@ -219,15 +199,14 @@ public class JavaUsers implements Users {
 		}
 
 		else {
-			if (sqlOn) {
-				query = String.format("SELECT * FROM \"user\" u WHERE UPPER(u.userId) LIKE '%%%s%%'",
-						pattern.toUpperCase());
-				return ok(DB.sql(query, User.class)
-						.stream()
-						.map(User::copyWithoutPassword)
-						.toList());
-			} else
-				return CosmosDBUsers.query(query, User.class);
+
+			query = String.format("SELECT * FROM \"user\" u WHERE UPPER(u.userId) LIKE '%%%s%%'",
+					pattern.toUpperCase());
+			return ok(DB.sql(query, User.class)
+					.stream()
+					.map(User::copyWithoutPassword)
+					.toList());
+
 		}
 
 	}

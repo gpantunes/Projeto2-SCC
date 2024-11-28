@@ -54,6 +54,8 @@ public class Test {
 		show(shorts.createShort("wales", "12345"));
 		show(shorts.createShort("wales", "12345"));
 
+		System.out.print(s1);
+
 		var blobUrl = URI.create(s2.value().getBlobUrl());
 		System.out.println( "------->" + blobUrl );
 		
