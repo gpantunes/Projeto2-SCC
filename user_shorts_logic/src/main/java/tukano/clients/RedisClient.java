@@ -1,3 +1,5 @@
+package tukano.clients;
+
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -5,12 +7,22 @@ import java.net.http.HttpResponse;
 import java.util.HashMap;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class RedisRestClient {
+import tukano.api.Blobs;
+import tukano.api.Result;
+import tukano.api.Result.ErrorCode;
+import tukano.api.Short;
+import tukano.api.Shorts;
+import tukano.api.User;
+import tukano.impl.data.Following;
+import tukano.impl.data.Likes;
+import tukano.impl.rest.TukanoRestServer;
+
+public class RedisClient {
     private final String baseUrl;
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
 
-    public RedisRestClient(String baseUrl) {
+    public RedisClient(String baseUrl) {
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
         this.httpClient = HttpClient.newHttpClient();
         this.objectMapper = new ObjectMapper();
@@ -70,7 +82,7 @@ public class RedisRestClient {
 
     public static void main(String[] args) {
         try {
-            RedisRestClient redisClient = new RedisRestClient("http://redis-rest-service:8080/");
+            RedisClient redisClient = new RedisClient("http://redis-rest-service:8080/");
 
             // Set a value
             String setResponse = redisClient.set("exampleKey", "exampleValue");

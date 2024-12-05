@@ -1,17 +1,17 @@
 package tukano.impl;
 
 import static java.lang.String.format;
+import static tukano.api.Result.ErrorCode.*;
 import static tukano.api.Result.error;
 import static tukano.api.Result.errorOrResult;
 import static tukano.api.Result.errorOrValue;
 import static tukano.api.Result.errorOrVoid;
 import static tukano.api.Result.ok;
-import static tukano.api.Result.ErrorCode.BAD_REQUEST;
-import static tukano.api.Result.ErrorCode.FORBIDDEN;
 //import static tukano.api.Result.ErrorCode.OK;
 //import static utils.DB.getOne;
-import static tukano.clients.BlobsClient;
+import  tukano.clients.BlobsClient;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -21,12 +21,6 @@ import com.azure.cosmos.CosmosException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import redis.clients.jedis.Jedis;
-
-//import com.azure.cosmos.CosmosContainer;
-//import com.azure.cosmos.CosmosException;
-//import com.azure.cosmos.models.CosmosItemRequestOptions;
-//import com.azure.cosmos.models.CosmosQueryRequestOptions;
-//import com.azure.cosmos.models.PartitionKey;
 
 import tukano.api.Blobs;
 import tukano.api.Result;
@@ -127,7 +121,11 @@ public class JavaShorts implements Shorts {
 
                 // Delete associated blob
                 //JavaBlobs.getInstance().delete(shrt.getShortId(), Token.get());
-                blobsClient.deleteBlob(shrt.getShortId(), Token.get());
+                try {
+                    blobsClient.deleteBlob(shrt.getShortId(), Token.get());
+                }catch (Exception e){
+                    return Result.error(INTERNAL_ERROR);
+                }
 
                 return DB.transaction(hibernate -> {
 
