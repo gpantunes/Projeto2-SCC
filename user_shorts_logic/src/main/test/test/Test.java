@@ -7,7 +7,6 @@ import java.util.Random;
 
 import tukano.api.Result;
 import tukano.api.User;
-import tukano.clients.rest.RestBlobsClient;
 import tukano.clients.rest.RestShortsClient;
 import tukano.clients.rest.RestUsersClient;
 import tukano.impl.rest.TukanoRestServer;
@@ -32,7 +31,6 @@ public class Test {
 		
 		var serverURI = String.format("http://localhost:%s/rest", TukanoRestServer.PORT);
 		
-		var blobs = new RestBlobsClient(serverURI);
 		var users = new RestUsersClient( serverURI);
 		var shorts = new RestShortsClient(serverURI);
 				
@@ -64,7 +62,7 @@ public class Test {
 		
 		var token = blobUrl.getQuery().split("=")[1];
 		
-		blobs.upload(blobUrl.toString(), randomBytes( 100 ), token);
+		//blobs.upload(blobUrl.toString(), randomBytes( 100 ), token);
 
 		
 		var s2id = s2.value().getShortId();

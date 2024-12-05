@@ -26,13 +26,15 @@ import tukano.api.Users;
 import utils.DB;
 import utils.RedisCache;
 import tukano.clients.BlobsClient;
+import tukano.clients.RedisClient;
 
 public class JavaUsers implements Users {
 
 	private static Logger Log = Logger.getLogger(JavaUsers.class.getName());
 
 	private static Users instance;
-	private static BlobsClient blobsClient = new BlobsClient("http://blobs-logic-service.default.svc.cluster.local:8080");
+	private BlobsClient blobsClient = new BlobsClient("http://blobs-logic-service.default.svc.cluster.local:8080");
+	private RedisClient redisClient = new RedisClient("http://redis-service.default.svc.cluster.local:8080");
 
 	// flags para definir o que se vai utilizar
 	private static final boolean cacheOn = TukanoRestServer.cacheOn;
