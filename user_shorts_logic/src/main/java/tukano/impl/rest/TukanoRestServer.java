@@ -30,10 +30,6 @@ public class TukanoRestServer extends Application {
 
 	public static String serverURI;
 
-	//flags para definir o que se vai utilizar
-	public static final boolean cacheOn = false;
-	public static final boolean sqlOn = false;
-
 	static {
 		System.setProperty("java.util.logging.SimpleFormatter.format", "%4$s: %5$s");
 	}

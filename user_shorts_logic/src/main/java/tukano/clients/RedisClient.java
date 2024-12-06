@@ -1,5 +1,6 @@
 package tukano.clients;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -28,7 +29,7 @@ public class RedisClient {
         this.objectMapper = new ObjectMapper();
     }
 
-    public String get(String key) throws Exception {
+    public Object get(Object key) throws Exception { //meter object pode talvez causar erros
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl + "get/" + key))
                 .GET()
@@ -79,6 +80,24 @@ public class RedisClient {
             throw new RuntimeException("Failed to delete key: " + response.statusCode() + " " + response.body());
         }
     }
+
+
+    public String setex(byte[] key, int ttl, byte[] value) throws IOException, InterruptedException {
+        String url = String.format("%sredis/setex?key=%s&ttl=%d&value=%s", baseUrl, key, ttl, value);
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .POST(HttpRequest.BodyPublishers.noBody())
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() == 200) {
+            return response.body();
+        } else {
+            throw new IOException("Failed request: " + response.statusCode() + " - " + response.body());
+        }
+    }
+
 
     public static void main(String[] args) {
         try {
