@@ -147,7 +147,7 @@ public class JavaUsers implements Users {
 						try {
 							redisClient.delete(userId);
 						} catch (Exception e) {
-							return error(INTERNAL_ERROR);
+
 						}
 
 					}).start();
@@ -166,7 +166,7 @@ public class JavaUsers implements Users {
 			try {
 
 				String cacheKey = String.valueOf(query.hashCode());
-				byte[] dataOnCache = (byte[]) redisClient.get(cacheKey.getBytes()); //isto pode causar problemas
+				byte[] dataOnCache =  redisClient.get(cacheKey).getBytes(); //isto pode causar problemas
 				Result<List<User>> data;
 
 				if (dataOnCache == null) {

@@ -29,7 +29,7 @@ public class RedisClient {
         this.objectMapper = new ObjectMapper();
     }
 
-    public Object get(Object key) throws Exception { //meter object pode talvez causar erros
+    public String get(String key) throws Exception { //meter object pode talvez causar erros
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl + "get/" + key))
                 .GET()
