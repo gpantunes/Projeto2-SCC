@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: user-shorts-config  # Name of the ConfigMap
+  namespace: default        # Change namespace if needed
+data:
+  spring.profiles.active: "production"  # Replace "production" with your desired Spring profile

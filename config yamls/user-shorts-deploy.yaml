@@ -15,8 +15,8 @@ spec:
         app: user-shorts
     spec:
       containers:
-        - name: user-shorts-container
-          image: guipma/user_shorts_service:latest  # Replace with your Docker image
+        - name: user-shorts-service
+          image: guipma/user-shorts-service-70231:latest  # Replace with your Docker image
           ports:
             - containerPort: 8080  # Port where the app runs
           env:
@@ -44,4 +44,5 @@ spec:
     - protocol: TCP
       port: 80  # Exposed port
       targetPort: 8080  # Target port inside the container
-  type: ClusterIP  # Change to NodePort or LoadBalancer if needed
+      nodePort: 30080
+  type: NodePort  # Change to NodePort or LoadBalancer if needed

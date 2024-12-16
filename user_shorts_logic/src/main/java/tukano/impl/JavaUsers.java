@@ -15,7 +15,6 @@ import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 import com.azure.cosmos.CosmosException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import redis.clients.jedis.Jedis;
 import tukano.api.Result;
 import tukano.api.Result.ErrorCode;
 //import tukano.auth.Authentication;
@@ -24,7 +23,6 @@ import tukano.api.User;
 import tukano.api.Users;
 import utils.DB;
 import tukano.clients.BlobsClient;
-import tukano.clients.RedisClient;
 
 public class JavaUsers implements Users {
 
@@ -32,7 +30,6 @@ public class JavaUsers implements Users {
 
 	private static Users instance;
 	private BlobsClient blobsClient = new BlobsClient("http://blobs-logic-service.default.svc.cluster.local:8080");
-	private RedisClient redisClient = new RedisClient("http://redis-service.default.svc.cluster.local:8080");
 
 	//private static final Authentication auth = new Authentication();
 
@@ -56,12 +53,6 @@ public class JavaUsers implements Users {
 
 		res = errorOrValue(DB.insertOne(user), user.getUserId());
 
-		try {
-			this.putInCache(user.userId(), user.toString());
-		} catch (Exception e) {
-			return Result.error(INTERNAL_ERROR);
-		}
-
 		return res;
 	}
 
@@ -74,14 +65,6 @@ public class JavaUsers implements Users {
 
 
 		try {
-			String dataOnCache = redisClient.get(userId);
-
-			if (dataOnCache != null) {
-				Log.info("%%%%%%%%%%%%%%%%%%% conseguiu obter da cache");
-				Result<User> item = validatedUserOrError(parseUserFromString(dataOnCache),
-						pwd);
-				return item;
-			} else {
 				Result<User> userRes;
 
 				userRes = validatedUserOrError(DB.getOne(userId, User.class), pwd);
@@ -89,14 +72,10 @@ public class JavaUsers implements Users {
 				if (userRes.isOK()) {
 					User item = userRes.value();
 					Log.info("%%%%%%%%%%%%%%%%%%% foi buscar ao cosmos " + item);
-					this.putInCache(userId, item.toString());
-					Log.info("&&&&&&&&&&&&&&&&&& meteu no jedis");
 				}
 
-				//userRes.setCookie(auth.login(userId, pwd)); // é preciso criar um objeto que junte o user e a cookie
-																// num tuplo para retornar Result<tuplo>
 				return userRes;
-			}
+
 
 		} catch (CosmosException e) {
 			return Result.error(errorCodeFromStatus(e.getStatusCode()));
@@ -120,11 +99,8 @@ public class JavaUsers implements Users {
 
 		Result<User> res;
 
-		if(this.putInCache(userId, newUser.toString()).isOK()) {
-			return ok(newUser);
-		}else {
-			return error(INTERNAL_ERROR);
-		}
+		return ok(newUser);
+
 	}
 
 	@Override
@@ -143,13 +119,8 @@ public class JavaUsers implements Users {
 						//JavaBlobs.getInstance().deleteAllBlobs(userId, Token.get(userId));
 						blobsClient.deleteAllBlobs(userId, Token.get(userId));
 						JavaShorts.getInstance().deleteAllShorts(userId, pwd, Token.get(userId));
-
-						try {
-							redisClient.delete(userId);
-						} catch (Exception e) {
-
-						}
-
+						System.out.println("Vai tentar apagar um user");
+						DB.deleteOne(userDB);
 					}).start();
 
 					return userDB;
@@ -165,11 +136,7 @@ public class JavaUsers implements Users {
 
 			try {
 
-				String cacheKey = String.valueOf(query.hashCode());
-				byte[] dataOnCache =  redisClient.get(cacheKey).getBytes(); //isto pode causar problemas
 				Result<List<User>> data;
-
-				if (dataOnCache == null) {
 
 					query = String.format("SELECT * FROM \"user\" u WHERE UPPER(u.userId) LIKE '%%%s%%'",
 							pattern.toUpperCase());
@@ -179,10 +146,7 @@ public class JavaUsers implements Users {
 							.toList());
 
 					Log.info("Foi buscar os users à CosmosDB");
-					if (data.isOK())
-						redisClient.setex(cacheKey.getBytes(), 20, serialize(data.value()));
-				} else
-					data = Result.ok(deserializeList(dataOnCache));
+
 
 				return data;
 
@@ -246,32 +210,6 @@ public class JavaUsers implements Users {
 		return (userId == null || pwd == null || info.getUserId() != null && !userId.equals(info.getUserId()));
 	}
 
-	private Result<Void> putInCache(String id, String obj) {
-		try {
-
-			redisClient.set(id, obj);
-			Log.info("Adicionou objeto à cache");
-			return ok();
-
-		} catch (Exception e) {
-			e.printStackTrace();
-			return Result.error(ErrorCode.INTERNAL_ERROR);
-		}
-	}
-
-	private Result<Void> delInCache(String id) {
-
-		try {
-
-			redisClient.delete(id);
-			Log.info("Apagou objeto da cache");
-			return ok();
-
-		} catch (Exception e) {
-			e.printStackTrace();
-			return Result.error(ErrorCode.INTERNAL_ERROR);
-		}
-	}
 
 	static Result.ErrorCode errorCodeFromStatus(int status) {
 		return switch (status) {

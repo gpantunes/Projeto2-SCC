@@ -1,0 +1,9 @@
+por imagem no docker hub:
+
+docker login
+
+docker build -t yourusername/yourimage:tag .
+docker build -t guipma/user-shorts-service-70231:latest .
+
+docker push yourusername/yourimage:tag
+docker push guipma/user-shorts-service-70231:latest
