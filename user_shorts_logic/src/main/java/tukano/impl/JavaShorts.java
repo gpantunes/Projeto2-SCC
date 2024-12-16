@@ -7,20 +7,15 @@ import static tukano.api.Result.errorOrResult;
 import static tukano.api.Result.errorOrValue;
 import static tukano.api.Result.errorOrVoid;
 import static tukano.api.Result.ok;
-//import static tukano.api.Result.ErrorCode.OK;
-//import static utils.DB.getOne;
-import  tukano.clients.BlobsClient;
+import tukano.clients.BlobsClient;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.logging.Logger;
 
-import com.azure.cosmos.CosmosException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import redis.clients.jedis.Jedis;
 
 import tukano.api.Blobs;
 import tukano.api.Result;
@@ -32,7 +27,6 @@ import tukano.impl.data.Following;
 import tukano.impl.data.Likes;
 import tukano.impl.rest.TukanoRestServer;
 import utils.DB;
-import utils.RedisCache;
 
 public class JavaShorts implements Shorts {
 
@@ -40,9 +34,6 @@ public class JavaShorts implements Shorts {
 
     private static Shorts instance;
     private static BlobsClient blobsClient = new BlobsClient("http://blobs-logic-service.default.svc.cluster.local:8080");
-
-    // flags para definir o que se vai utilizar
-    private static final boolean cacheOn = TukanoRestServer.cacheOn;
 
     synchronized public static Shorts getInstance() {
         if (instance == null) {
@@ -69,9 +60,6 @@ public class JavaShorts implements Shorts {
 
             Result<Short> shortDb = DB.insertOne(shrt);
 
-            if (cacheOn)
-                this.putInCache(shrt.getShortId(), shrt.toString());
-
             return errorOrValue(shortDb,
                     s -> s.copyWithLikes_And_Token(0));
         });
@@ -94,16 +82,7 @@ public class JavaShorts implements Shorts {
         like = (Result<List<Long>>) this.tryQuery(query, "likes",
                 Long.class);
 
-        if (cacheOn) {
-
-            shortRes = this.getFromCache(shortId, like);
-
-        } else {
-
-            shortRes = errorOrValue(DB.getOne(shortId, Short.class),
-                    shrt -> shrt.copyWithLikes_And_Token(like.value().get(0)));
-
-        }
+        shortRes = this.getFromCache(shortId, like);
         return shortRes;
 
     }
@@ -116,11 +95,7 @@ public class JavaShorts implements Shorts {
 
             return errorOrResult(okUser(shrt.getOwnerId(), password), user -> {
 
-                if (cacheOn)
-                    this.delInCache(shortId);
-
                 // Delete associated blob
-                //JavaBlobs.getInstance().delete(shrt.getShortId(), Token.get());
                 try {
                     blobsClient.deleteBlob(shrt.getShortId(), Token.get());
                 }catch (Exception e){
@@ -128,11 +103,9 @@ public class JavaShorts implements Shorts {
                 }
 
                 return DB.transaction(hibernate -> {
-
                     hibernate.remove(shrt);
                     var query = format("DELETE FROM \"likes\" l WHERE l.shortId = '%s'", shortId);
                     hibernate.createNativeQuery(query, Likes.class).executeUpdate();
-
                 });
 
             });
@@ -173,23 +146,12 @@ public class JavaShorts implements Shorts {
             Result<Void> res = okUser(userId2);
 
             if (res.isOK()) {
-
                 Result<Following> resDB;
 
                 if (isFollowing) {
-
                     resDB = DB.insertOne(f);
-
-                    if (cacheOn)
-                        this.putInCache(userId1 + ":" + userId2, f.toString());
-
                 } else {
-
                     resDB = DB.deleteOne(f);
-
-                    if (cacheOn)
-                        this.delInCache(userId1 + ":" + userId2);
-
                 }
 
                 return errorOrVoid(res, resDB);
@@ -224,23 +186,12 @@ public class JavaShorts implements Shorts {
             Result<User> res = okUser(userId, password);
 
             if (res.isOK()) {
-
                 Result<Likes> resDB;
 
                 if (isLiked) {
-
                     resDB = DB.insertOne(l);
-
-                    if (resDB.isOK())
-                        this.putInCache(userId + "_" + shortId, l.toString());
-
                 } else {
-
                     resDB = DB.deleteOne(l);
-
-                    if (resDB.isOK())
-                        this.delInCache(userId + "_" + shortId);
-
                 }
 
                 return errorOrVoid(res, resDB);
@@ -322,9 +273,6 @@ public class JavaShorts implements Shorts {
 
         for (Short s : data.value()) {
             DB.deleteOne(s);
-
-            if (cacheOn)
-                this.delInCache(s.getShortId());
             Log.warning("Apagou 1 short");
         }
 
@@ -338,9 +286,6 @@ public class JavaShorts implements Shorts {
 
         for (Following f : data2.value()) {
             DB.deleteOne(f);
-
-            if (cacheOn)
-                this.delInCache(f.getFollower() + ":" + f.getFollowee());
             Log.warning("Apagou 1 Follow");
         }
 
@@ -353,9 +298,6 @@ public class JavaShorts implements Shorts {
 
         for (Likes l : data3.value()) {
             DB.deleteOne(l);
-
-            if (cacheOn)
-                this.delInCache(l.getUserId() + "_" + l.getShortId());
             Log.warning("Apagou 1 Like");
         }
 
@@ -434,42 +376,6 @@ public class JavaShorts implements Shorts {
         }
     }
 
-    /*
-     * puts an object in cache
-     */
-    private Result<Void> putInCache(String id, String obj) {
-        try (Jedis jedis = RedisCache.getCachePool().getResource()) {
-
-            jedis.set(id, obj);
-            Log.info("Adicionou objeto à cache");
-            return ok();
-
-        } catch (CosmosException e) {
-            return Result.error(errorCodeFromStatus(e.getStatusCode()));
-        } catch (Exception e) {
-            e.printStackTrace();
-            return Result.error(ErrorCode.INTERNAL_ERROR);
-        }
-    }
-
-    /*
-     * deletes an object in cache
-     */
-    private Result<Void> delInCache(String id) {
-
-        try (Jedis jedis = RedisCache.getCachePool().getResource()) {
-
-            jedis.del(id);
-            Log.info("Apagou objeto da cache");
-            return ok();
-
-        } catch (CosmosException e) {
-            return Result.error(errorCodeFromStatus(e.getStatusCode()));
-        } catch (Exception e) {
-            e.printStackTrace();
-            return Result.error(ErrorCode.INTERNAL_ERROR);
-        }
-    }
 
     /*
      * executes a query in cache and/or in the data bases, depending on the DB
@@ -479,36 +385,15 @@ public class JavaShorts implements Shorts {
 
         Result<List<T>> data;
 
-        if (cacheOn) {
-            Log.info("Cache está ativa");
-            try (Jedis jedis = RedisCache.getCachePool().getResource()) {
-                byte[] dataOnCache = jedis.get(String.valueOf(query.hashCode()).getBytes());
-
-                if (dataOnCache == null) {
-
+            try {
                     data = Result.ok(DB.sql(query, clazz));
+                    System.out.println("Fez a query à DB");
 
-                    if (data.isOK()) {
-                        Log.info("Foi buscar os objetos à DB e colocou na cache");
-                        jedis.setex(String.valueOf(query.hashCode()).getBytes(), 20, serialize(data.value()));
-                    }
-                } else {
-                    data = Result.ok(deserializeList(dataOnCache, clazz));
-                    Log.info("Obteve objeto da cache");
-                }
-
-            } catch (CosmosException e) {
-                return Result.error(errorCodeFromStatus(e.getStatusCode()));
             } catch (Exception e) {
                 e.printStackTrace();
                 return Result.error(ErrorCode.INTERNAL_ERROR);
             }
-        } else {
-            Log.info("Cache não está ativa");
 
-            data = Result.ok(DB.sql(query, clazz));
-
-        }
         return data;
     }
 
@@ -519,28 +404,15 @@ public class JavaShorts implements Shorts {
 
         Result<Short> shortRes;
 
-        try (Jedis jedis = RedisCache.getCachePool().getResource()) {
-            String dataOnCache = jedis.get(id);
-
-            if (dataOnCache != null) {
-                Log.info("Obteve objeto da cache");
-                shortRes = errorOrValue(parseShortFromString(dataOnCache),
-                        shrt -> shrt.copyWithLikes_And_Token(like.value().get(0)));
-            } else {
+        try {
 
                 shortRes = errorOrValue(DB.getOne(id, Short.class),
                         shrt -> shrt.copyWithLikes_And_Token(like.value().get(0)));
 
-                if (cacheOn) {
-                    Short item = shortRes.value();
-                    Log.info("%%%%%%%%%%%%%%%%%%% foi buscar ao cosmos " + item);
-                    this.putInCache(id, item.toString());
-                    Log.info("&&&&&&&&&&&&&&&&&& colocou no jedis");
-                }
-            }
 
-        } catch (CosmosException e) {
-            return Result.error(errorCodeFromStatus(e.getStatusCode()));
+                Short item = shortRes.value();
+                Log.info("%%%%%%%%%%%%%%%%%%% foi buscar ao cosmos " + item);
+
         } catch (Exception e) {
             e.printStackTrace();
             return Result.error(ErrorCode.INTERNAL_ERROR);

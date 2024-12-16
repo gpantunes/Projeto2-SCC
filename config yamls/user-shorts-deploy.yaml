@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-shorts-deployment
+  labels:
+    app: user-shorts
+spec:
+  replicas: 1  # Number of replicas for scalability
+  selector:
+    matchLabels:
+      app: user-shorts
+  template:
+    metadata:
+      labels:
+        app: user-shorts
+    spec:
+      containers:
+        - name: user-shorts-service
+          image: guipma/user-shorts-service-70231:latest  # Replace with your Docker image
+          ports:
+            - containerPort: 8080  # Port where the app runs
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              valueFrom:
+                configMapKeyRef:
+                  name: user-shorts-config
+                  key: spring.profiles.active
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "500m"
+            limits:
+              memory: "512Mi"
+              cpu: "1000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-shorts-service
+spec:
+  selector:
+    app: user-shorts
+  ports:
+    - protocol: TCP
+      port: 80  # Exposed port
+      targetPort: 8080  # Target port inside the container
+      nodePort: 30080
+  type: NodePort  # Change to NodePort or LoadBalancer if needed

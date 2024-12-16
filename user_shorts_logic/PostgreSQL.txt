@@ -1,8 +1,8 @@
 CREATE TABLE "user" (
-    userId VARCHAR(255) PRIMARY KEY,        -- ID do usuário (chave primária, gerado automaticamente)
-    pwd VARCHAR(255) NOT NULL,          -- Senha
-    email VARCHAR(255) NOT NULL,        -- E-mail
-    displayName VARCHAR(255)           -- Nome de exibição
+    userId VARCHAR(255) PRIMARY KEY,
+    pwd VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    displayName VARCHAR(255)
 );
 
 DROP TABLE "user";

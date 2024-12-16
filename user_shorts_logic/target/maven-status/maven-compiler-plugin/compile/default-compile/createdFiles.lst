@@ -46,7 +46,6 @@ test\Test.class
 utils\IO.class
 tukano\api\ErrorResult.class
 utils\TryCatch$ThrowableSupplier.class
-tukano\clients\RedisClient.class
 tukano\clients\rest\RestShortsClient$1.class
 utils\JSON.class
 tukano\clients\rest\RestShortsClient$4.class
