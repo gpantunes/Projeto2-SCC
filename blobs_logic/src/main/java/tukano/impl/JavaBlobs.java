@@ -13,6 +13,7 @@ import tukano.api.Result;
 import tukano.impl.rest.TukanoRestServer;
 import tukano.impl.storage.BlobStorage;
 import tukano.impl.storage.FilesystemStorage;
+import tukano.impl.clients.ShortsClient;
 import utils.Hash;
 import utils.Hex;
 
@@ -20,6 +21,7 @@ public class JavaBlobs implements Blobs {
 
 	private static Blobs instance;
 	private static Logger Log = Logger.getLogger(JavaBlobs.class.getName());
+	private static ShortsClient shortsClient = new ShortsClient("user-shorts-service");
 
 	public String baseURI;
 	private BlobStorage storage;
@@ -74,7 +76,13 @@ public class JavaBlobs implements Blobs {
 		if (!validBlobId(userId, token))
 			return error(FORBIDDEN);
 
-		List<String> shortList = JavaShorts.getInstance().getShorts(userId).value();
+
+		List<String> shortList = null;
+		try {
+			shortList = shortsClient.getShorts(userId);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 
 		for (String shrt : shortList) {
 			Log.info("Está a apagar o blob: " + shrt);

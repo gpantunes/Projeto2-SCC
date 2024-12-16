@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blobs-service-deployment
+  labels:
+    app: blobs-service
+spec:
+  replicas: 1  # Number of replicas
+  selector:
+    matchLabels:
+      app: blobs-service
+  template:
+    metadata:
+      labels:
+        app: blobs-service
+    spec:
+      containers:
+        - name: blobs-service
+          image: guipma/blobs-service-70231:latest  # Replace with your Docker Hub image
+          ports:
+            - containerPort: 8080  # Port where the app runs
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              valueFrom:
+                configMapKeyRef:
+                  name: blobs-service-config  # Configuration reference
+                  key: spring.profiles.active
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "500m"
+            limits:
+              memory: "512Mi"
+              cpu: "1000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blobs-service
+spec:
+  selector:
+    app: blobs-service
+  ports:
+    - protocol: TCP
+      port: 80         # Exposed port for other pods
+      targetPort: 8080 # Port inside the container
+      nodePort: 30070
+  type: NodePort  # Accessible only inside the cluster

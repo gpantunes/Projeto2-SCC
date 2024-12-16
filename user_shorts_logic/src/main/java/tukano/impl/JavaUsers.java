@@ -120,7 +120,7 @@ public class JavaUsers implements Users {
 						blobsClient.deleteAllBlobs(userId, Token.get(userId));
 						JavaShorts.getInstance().deleteAllShorts(userId, pwd, Token.get(userId));
 						System.out.println("Vai tentar apagar um user");
-						DB.deleteOne(userDB);
+						DB.deleteOne(userDB.value());
 					}).start();
 
 					return userDB;
