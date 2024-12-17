@@ -29,7 +29,7 @@ public class JavaUsers implements Users {
 	private static Logger Log = Logger.getLogger(JavaUsers.class.getName());
 
 	private static Users instance;
-	private BlobsClient blobsClient = new BlobsClient("http://blobs-logic-service.default.svc.cluster.local:8080");
+	private static BlobsClient blobsClient = new BlobsClient("http://blobs-service:80/tukano-1.0/rest");
 
 	//private static final Authentication auth = new Authentication();
 
@@ -116,11 +116,14 @@ public class JavaUsers implements Users {
 				user -> {
 					// Delete user shorts and related info asynchronously in a separate thread
 					Executors.defaultThreadFactory().newThread(() -> {
-						//JavaBlobs.getInstance().deleteAllBlobs(userId, Token.get(userId));
-						blobsClient.deleteAllBlobs(userId, Token.get(userId));
-						JavaShorts.getInstance().deleteAllShorts(userId, pwd, Token.get(userId));
-						System.out.println("Vai tentar apagar um user");
-						DB.deleteOne(userDB);
+						try {
+							blobsClient.deleteAllBlobs(userId, Token.get(userId));
+							JavaShorts.getInstance().deleteAllShorts(userId, pwd, Token.get(userId));
+							System.out.println("Vai tentar apagar um user");
+							DB.deleteOne(userDB.value());
+						} catch(Exception e){
+							e.printStackTrace();
+						}
 					}).start();
 
 					return userDB;
@@ -132,10 +135,7 @@ public class JavaUsers implements Users {
 		Log.info(() -> format("searchUsers : patterns = %s\n", pattern));
 
 		var query = format("SELECT * FROM users u WHERE UPPER(u.id) LIKE '%%%s%%'", pattern.toUpperCase());
-
-
 			try {
-
 				Result<List<User>> data;
 
 					query = String.format("SELECT * FROM \"user\" u WHERE UPPER(u.userId) LIKE '%%%s%%'",
@@ -146,7 +146,6 @@ public class JavaUsers implements Users {
 							.toList());
 
 					Log.info("Foi buscar os users à CosmosDB");
-
 
 				return data;
 
