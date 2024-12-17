@@ -6,6 +6,7 @@ tukano\api\Result.class
 utils\Props.class
 tukano\auth\Authentication.class
 tukano\impl\data\Following.class
+tukano\impl\clients\ShortsClient$1.class
 utils\Args.class
 utils\IP.class
 tukano\impl\rest\RestResource$1.class

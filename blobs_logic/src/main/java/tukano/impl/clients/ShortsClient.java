@@ -4,42 +4,67 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.io.IOException;
 import java.util.List;
 
+import static tukano.api.Result.ErrorCode.*;
+import static tukano.api.Result.error;
+import static tukano.api.Result.errorOrResult;
+import static tukano.api.Result.errorOrValue;
+import static tukano.api.Result.errorOrVoid;
+import static tukano.api.Result.ok;
+
+import org.jvnet.hk2.internal.ErrorResults;
+import tukano.api.Result;
+
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class ShortsClient {
-
     private final String baseUrl;
     private final HttpClient httpClient;
-    private final ObjectMapper objectMapper;
 
-    // Constructor
-    public ShortsClient(String serviceName) {
-        this.baseUrl = "http://" + serviceName; // Base URL for the user-shorts-service
-        this.httpClient = HttpClient.newHttpClient(); // Create the HTTP client
-        this.objectMapper = new ObjectMapper(); // For JSON serialization/deserialization
+    public ShortsClient(String baseUrl) {
+        this.baseUrl = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
+        this.httpClient = HttpClient.newHttpClient();
     }
 
 
-    // Search for users
-    public List<String> getShorts(String query) throws Exception {
-        String endpoint = baseUrl + "/rest/shorts/?query=" + query;
 
+    public Result<List<String>> getShorts(String USER_ID) throws IOException, InterruptedException {
+        System.out.println("Entrou no get shorts do client");
+        String uri = String.format("%sshorts/%s/shorts", baseUrl, USER_ID);
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(endpoint))
-                .header("Accept", "application/json")
+                .uri(URI.create(uri))
                 .GET()
                 .build();
 
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-        if (response.statusCode() == 200) {
-            return objectMapper.readValue(response.body(),
-                    objectMapper.getTypeFactory().constructCollectionType(List.class, String.class));
+        System.out.println("A resposta foi " + response.statusCode());
+
+        if (response.statusCode() >= 200 && response.statusCode() < 220) {
+            System.out.println("A response deu 200");
+            ObjectMapper objectMapper = new ObjectMapper();
+            List<String> strings = objectMapper.readValue(response.body(), new TypeReference<List<String>>() {});
+            return Result.ok(strings);
         } else {
-            throw new RuntimeException("Failed to search users: " + response.body());
+            return Result.error(errorCodeFromStatus(response.statusCode()));
         }
+    }
+
+
+    static Result.ErrorCode errorCodeFromStatus(int status) {
+        return switch (status) {
+            case 200 ->
+                    Result.ErrorCode.OK;
+            case 404 ->
+                    Result.ErrorCode.NOT_FOUND;
+            case 409 ->
+                    Result.ErrorCode.CONFLICT;
+            default ->
+                    Result.ErrorCode.INTERNAL_ERROR;
+        };
     }
 }

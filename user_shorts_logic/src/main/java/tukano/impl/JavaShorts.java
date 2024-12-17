@@ -33,7 +33,7 @@ public class JavaShorts implements Shorts {
     private static Logger Log = Logger.getLogger(JavaShorts.class.getName());
 
     private static Shorts instance;
-    private static BlobsClient blobsClient = new BlobsClient("http://blobs-logic-service.default.svc.cluster.local:8080");
+    private static BlobsClient blobsClient = new BlobsClient("http://blobs-service:80/tukano-1.0/rest");
 
     synchronized public static Shorts getInstance() {
         if (instance == null) {
@@ -97,8 +97,10 @@ public class JavaShorts implements Shorts {
 
                 // Delete associated blob
                 try {
+                    System.out.println("Vai chamar o delete blob do client");
                     blobsClient.deleteBlob(shrt.getShortId(), Token.get());
                 }catch (Exception e){
+                    e.printStackTrace();
                     return Result.error(INTERNAL_ERROR);
                 }
 
@@ -272,7 +274,7 @@ public class JavaShorts implements Shorts {
                 Short.class);
 
         for (Short s : data.value()) {
-            DB.deleteOne(s);
+            DB.deleteOne(s); //talvez seja melhor chamar o delete short
             Log.warning("Apagou 1 short");
         }
 
