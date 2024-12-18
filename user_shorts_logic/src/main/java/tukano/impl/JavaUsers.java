@@ -7,8 +7,6 @@ import static tukano.api.Result.error;
 import static tukano.api.Result.errorOrResult;
 import static tukano.api.Result.errorOrValue;
 
-//import static tukano.auth.Authentication.login;
-
 //import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -17,12 +15,17 @@ import com.azure.cosmos.CosmosException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import tukano.api.Result;
 import tukano.api.Result.ErrorCode;
-//import tukano.auth.Authentication;
+import tukano.auth.Authentication;
 import tukano.impl.rest.TukanoRestServer;
 import tukano.api.User;
 import tukano.api.Users;
 import utils.DB;
 import tukano.clients.BlobsClient;
+
+import jakarta.ws.rs.core.Cookie;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.NewCookie;
+import jakarta.ws.rs.core.Response;
 
 public class JavaUsers implements Users {
 
@@ -31,7 +34,7 @@ public class JavaUsers implements Users {
 	private static Users instance;
 	private static BlobsClient blobsClient = new BlobsClient("http://blobs-service:80/tukano-1.0/rest");
 
-	//private static final Authentication auth = new Authentication();
+	private static Authentication auth = new Authentication();
 
 	synchronized public static Users getInstance() {
 		if (instance == null)
@@ -52,7 +55,6 @@ public class JavaUsers implements Users {
 		Result<String> res;
 
 		res = errorOrValue(DB.insertOne(user), user.getUserId());
-
 		return res;
 	}
 
@@ -63,22 +65,18 @@ public class JavaUsers implements Users {
 		if (userId == null)
 			return error(BAD_REQUEST);
 
-
 		try {
-				Result<User> userRes;
+			Result<User> userRes;
+			userRes = validatedUserOrError(DB.getOne(userId, User.class), pwd);
 
-				userRes = validatedUserOrError(DB.getOne(userId, User.class), pwd);
+			if (userRes.isOK()) {
+				User item = userRes.value();
+				Log.info("%%%%%%%%%%%%%%%%%%% foi buscar à DB " + item);
+			}
 
-				if (userRes.isOK()) {
-					User item = userRes.value();
-					Log.info("%%%%%%%%%%%%%%%%%%% foi buscar ao cosmos " + item);
-				}
+			Response authRes = auth.login(userId, pwd);
 
-				return userRes;
-
-
-		} catch (CosmosException e) {
-			return Result.error(errorCodeFromStatus(e.getStatusCode()));
+			return userRes;
 		} catch (Exception e) {
 			e.printStackTrace();
 			return Result.error(ErrorCode.INTERNAL_ERROR);
