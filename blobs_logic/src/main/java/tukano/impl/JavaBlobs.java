@@ -82,8 +82,12 @@ public class JavaBlobs implements Blobs {
 	public Result<Void> delete(String blobId, String token) {
 		Log.info(() -> format("delete : blobId = %s, token=%s\n", blobId, token));
 
-		if (!validBlobId(blobId, token))
+		String userId = blobId.split("\\+")[0];
+		if(!validSession(userId, token)) {
 			return error(FORBIDDEN);
+		}
+
+		System.out.println("A cookie " + token + " é valida");
 
 		Log.info("Acabou de apagar um blob");
 		return storage.delete(toPath(blobId));
@@ -93,9 +97,11 @@ public class JavaBlobs implements Blobs {
 	public Result<Void> deleteAllBlobs(String userId, String token) {
 		Log.info(() -> format("deleteAllBlobs : userId = %s, token=%s\n", userId, token));
 
-		if (!validBlobId(userId, token))
+		if(!validSession(userId, token)) {
 			return error(FORBIDDEN);
+		}
 
+		System.out.println("A cookie " + token + " é valida");
 
 		List<String> shortList = null;
 		try {
@@ -112,11 +118,6 @@ public class JavaBlobs implements Blobs {
 
 		Log.info("Acabou de apagar os blobs");
 		return ok();
-	}
-
-	private boolean validBlobId(String blobId, String token) {
-		//return Token.isValid(token, blobId);
-		return true;
 	}
 
 	private boolean validSession(String userId, String cookie) {

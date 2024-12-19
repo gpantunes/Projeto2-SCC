@@ -49,6 +49,12 @@ public class JavaUsers implements Users {
 
 	@Override
 	public Result<String> login(String userId, String pwd) {
+
+		Result userRes = getUser(userId, pwd);
+		if(!userRes.isOK()) {
+			return Result.error(BAD_REQUEST);
+		}
+
 		Response authRes = auth.login(userId, pwd);
 		String cookie = authRes.getHeaderString("Set-Cookie");
 

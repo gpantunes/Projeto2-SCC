@@ -52,4 +52,4 @@ spec:
       port: 80         # Exposed port for other pods
       targetPort: 8080 # Port inside the container
       nodePort: 30070
-  type: NodePort  # Accessible only inside the cluster
+  type: LoadBalancer  # Accessible only inside the cluster

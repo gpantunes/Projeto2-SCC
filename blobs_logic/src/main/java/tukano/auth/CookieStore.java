@@ -41,12 +41,15 @@ public class CookieStore {
         System.out.println("Entrou no validate cookie");
 
         String storedCookie = this.get(userId);
-        Long cookieTimeStamp = Long.parseLong(storedCookie.split(";")[6]);
+        String[] cookieParts = storedCookie.split(";");
+        Long cookieTimeStamp = Long.parseLong(cookieParts[6]);
 
         int lastIndex = storedCookie.lastIndexOf(';');
         String cleanCookie = (lastIndex != -1) ? storedCookie.substring(0, lastIndex) : storedCookie;
 
-        if(System.currentTimeMillis() - cookieTimeStamp > 3600*1000) {
+
+        Long lifeTime = Long.parseLong(cookieParts[4].split("=")[1]);
+        if(System.currentTimeMillis() - cookieTimeStamp > lifeTime*1000) {
             this.remove(cookie);
             System.out.println("A cookie perdeu a validade");
             return false;
