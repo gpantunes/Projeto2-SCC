@@ -8,6 +8,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import tukano.impl.Token;
+import tukano.auth.CookieStore;
+import static tukano.auth.CookieStore.get;
 
 /**
  * Represents a Short video uploaded by an user.
@@ -96,7 +98,8 @@ public class Short {
 	}
 
 	public Short copyWithLikes_And_Token(long totLikes) {
-		var urlWithToken = String.format("%s?token=%s", blobUrl, Token.get(shortId));
+		var urlWithToken = String.format("%s?token=%s", blobUrl, CookieStore.getInstance().get(ownerId));
+		System.out.println("####################### cookie no copy with likes " + CookieStore.getInstance().get(ownerId));
         Log.warning("Ou a criar o short " + urlWithToken);
         return new Short(shortId, ownerId, urlWithToken, timestamp, (int) totLikes);
     }

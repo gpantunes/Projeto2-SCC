@@ -45,4 +45,4 @@ spec:
       port: 80  # Exposed port
       targetPort: 8080  # Target port inside the container
       nodePort: 30080
-  type: NodePort  # Change to NodePort or LoadBalancer if needed
+  type: LoadBalancer  # Change to NodePort or LoadBalancer if needed

@@ -1,4 +1,0 @@
-No NoSQL não usamos Hibernate
-No PostgreSQL usamos Hibernate
-
-Confirmar cache
