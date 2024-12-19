@@ -1,0 +1,19 @@
+correr os yaml do persistent volume
+
+
+para ver se o volume está com o status bound
+kubectl get pv
+
+para ver se a claim está bound ao volume blobs-pv
+kubectl get pvc
+
+
+para ver se há ficheiros no volume
+minikube ssh
+cd /mnt/data/blobs-service
+ls -l
+
+(não deve ser possivel entrar na pasta do user por falta de permissoes mas ela deve existir)
+
+também podes fazer restart ao pod dos blobs e fazer um download para garantir que não se perdeu o ficheiro, 
+fazer login de novo porque a cookie é perdida.
