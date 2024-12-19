@@ -3,13 +3,7 @@ C:\Users\guipm\Projetos Uni\4º Ano\SCC_projects\Projeto2-SCC\blobs_logic\src\ma
 C:\Users\guipm\Projetos Uni\4º Ano\SCC_projects\Projeto2-SCC\blobs_logic\src\main\java\tukano\api\Result.java
 C:\Users\guipm\Projetos Uni\4º Ano\SCC_projects\Projeto2-SCC\blobs_logic\src\main\java\tukano\api\Short.java
 C:\Users\guipm\Projetos Uni\4º Ano\SCC_projects\Projeto2-SCC\blobs_logic\src\main\java\tukano\api\Shorts.java
-C:\Users\guipm\Projetos Uni\4º Ano\SCC_projects\Projeto2-SCC\blobs_logic\src\main\java\tukano\auth\Authentication.java
-C:\Users\guipm\Projetos Uni\4º Ano\SCC_projects\Projeto2-SCC\blobs_logic\src\main\java\tukano\auth\ControlResource.java
-C:\Users\guipm\Projetos Uni\4º Ano\SCC_projects\Projeto2-SCC\blobs_logic\src\main\java\tukano\auth\cookies\RequestCookies.java
-C:\Users\guipm\Projetos Uni\4º Ano\SCC_projects\Projeto2-SCC\blobs_logic\src\main\java\tukano\auth\cookies\RequestCookiesCleanupFilter.java
-C:\Users\guipm\Projetos Uni\4º Ano\SCC_projects\Projeto2-SCC\blobs_logic\src\main\java\tukano\auth\cookies\RequestCookiesFilter.java
-C:\Users\guipm\Projetos Uni\4º Ano\SCC_projects\Projeto2-SCC\blobs_logic\src\main\java\tukano\auth\FakeRedisLayer.java
-C:\Users\guipm\Projetos Uni\4º Ano\SCC_projects\Projeto2-SCC\blobs_logic\src\main\java\tukano\auth\Session.java
+C:\Users\guipm\Projetos Uni\4º Ano\SCC_projects\Projeto2-SCC\blobs_logic\src\main\java\tukano\auth\CookieStore.java
 C:\Users\guipm\Projetos Uni\4º Ano\SCC_projects\Projeto2-SCC\blobs_logic\src\main\java\tukano\impl\clients\ShortsClient.java
 C:\Users\guipm\Projetos Uni\4º Ano\SCC_projects\Projeto2-SCC\blobs_logic\src\main\java\tukano\impl\data\Following.java
 C:\Users\guipm\Projetos Uni\4º Ano\SCC_projects\Projeto2-SCC\blobs_logic\src\main\java\tukano\impl\data\Likes.java
@@ -37,5 +31,3 @@ C:\Users\guipm\Projetos Uni\4º Ano\SCC_projects\Projeto2-SCC\blobs_logic\src\ma
 C:\Users\guipm\Projetos Uni\4º Ano\SCC_projects\Projeto2-SCC\blobs_logic\src\main\java\utils\Sleep.java
 C:\Users\guipm\Projetos Uni\4º Ano\SCC_projects\Projeto2-SCC\blobs_logic\src\main\java\utils\TLS.java
 C:\Users\guipm\Projetos Uni\4º Ano\SCC_projects\Projeto2-SCC\blobs_logic\src\main\java\utils\TryCatch.java
-C:\Users\guipm\Projetos Uni\4º Ano\SCC_projects\Projeto2-SCC\blobs_logic\src\main\test\tukano\clients\rest\RestBlobsClient.java
-C:\Users\guipm\Projetos Uni\4º Ano\SCC_projects\Projeto2-SCC\blobs_logic\src\main\test\tukano\clients\rest\RestClient.java

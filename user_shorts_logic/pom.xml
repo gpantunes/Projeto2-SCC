@@ -105,6 +105,12 @@
             <artifactId>jakarta.ws.rs-api</artifactId>
             <version>3.1.0</version>
         </dependency>
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <version>6.0.0</version> <!-- Use a version compatible with your project -->
+            <scope>provided</scope> <!-- Provided because the container (e.g., Tomcat) will provide it -->
+        </dependency>
         <!-- Optionally, add Jersey or RESTEasy implementation if needed -->
         <dependency>
             <groupId>org.glassfish.jersey.containers</groupId>

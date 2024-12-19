@@ -28,19 +28,19 @@ public class BlobsClient {
         this.httpClient = HttpClient.newHttpClient();
     }
 
-    public String uploadBlob(String blobName, Path filePath) throws IOException, InterruptedException {
+    public Result setCookie(String cookie, String userId) throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(baseUrl + "blobs/upload/" + blobName))
-                .header("Content-Type", "application/octet-stream")
-                .PUT(HttpRequest.BodyPublishers.ofFile(filePath))
+                .uri(URI.create(baseUrl + "blobs/cookie?token=" + cookie + "&userId=" + userId))
+                .POST(HttpRequest.BodyPublishers.noBody())
                 .build();
 
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-        if (response.statusCode() == 200) {
-            return response.body(); // Could be a blob ID or success message
+        if (response.statusCode() >= 200 && response.statusCode() < 220) {
+            System.out.println("A response deu 200");
+            return Result.ok();
         } else {
-            throw new IOException("Failed to upload blob: " + response.statusCode() + " " + response.body());
+            return Result.error(errorCodeFromStatus(response.statusCode()));
         }
     }
 
@@ -73,7 +73,7 @@ public class BlobsClient {
 
         if (response.statusCode() >= 200 && response.statusCode() < 220) {
             System.out.println("A response deu 200");
-            return Result.ok(response.body()); // Could be a confirmation message
+            return Result.ok(response.body());
         } else {
             return Result.error(errorCodeFromStatus(response.statusCode()));
         }
@@ -96,7 +96,7 @@ public class BlobsClient {
 
         if (response.statusCode() >= 200 && response.statusCode() < 220) {
             System.out.println("A response deu 200");
-            return Result.ok(); // Could be a confirmation message
+            return Result.ok();
         } else {
             return Result.error(errorCodeFromStatus(response.statusCode()));
         }

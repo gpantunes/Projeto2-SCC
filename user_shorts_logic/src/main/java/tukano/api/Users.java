@@ -5,6 +5,8 @@ import java.util.List;
 public interface Users {
 	
 	String NAME = "users";
+
+	Result<String> login(String userId, String pwd);
 	
 	/**
 	 * Creates a new user.

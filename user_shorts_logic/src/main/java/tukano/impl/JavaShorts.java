@@ -27,6 +27,10 @@ import tukano.impl.data.Following;
 import tukano.impl.data.Likes;
 import tukano.impl.rest.TukanoRestServer;
 import utils.DB;
+import tukano.auth.CookieStore;
+import static tukano.auth.CookieStore.get;
+
+
 
 public class JavaShorts implements Shorts {
 
@@ -98,7 +102,7 @@ public class JavaShorts implements Shorts {
                 // Delete associated blob
                 try {
                     System.out.println("Vai chamar o delete blob do client");
-                    blobsClient.deleteBlob(shrt.getShortId(), Token.get());
+                    blobsClient.deleteBlob(shrt.getShortId(), CookieStore.get(shortId.split("\\+")[0]));
                 }catch (Exception e){
                     e.printStackTrace();
                     return Result.error(INTERNAL_ERROR);
@@ -261,10 +265,6 @@ public class JavaShorts implements Shorts {
     @Override
     public Result<Void> deleteAllShorts(String userId, String password, String token) {
         Log.info(() -> format("deleteAllShorts : userId = %s, password = %s, token = %s\n", userId, password, token));
-
-        if (!Token.isValid(token, userId)) {
-            return error(FORBIDDEN);
-        }
 
         // delete shorts
         Log.warning("Está a tentar apagar os shorts");

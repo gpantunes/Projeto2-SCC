@@ -18,6 +18,9 @@ public class RestUsersResource extends RestResource implements RestUsers {
 	}
 
 	@Override
+	public String login(String name, String pwd) { return super.resultOrThrow(impl.login(name, pwd)); }
+
+	@Override
 	public String createUser(User user) {
 		return super.resultOrThrow(impl.createUser(user));
 	}

@@ -22,6 +22,11 @@ public interface RestUsers {
 	String PWD = "pwd";
 	String QUERY = "query";
 	String USER_ID = "userId";
+
+	@POST
+	@Path("/login/{" + USER_ID+ "}")
+	@Produces(MediaType.APPLICATION_JSON)
+	String login(@PathParam(USER_ID) String userId, @QueryParam( PWD ) String pwd);
 	
 	@POST
 	@Consumes(MediaType.APPLICATION_JSON)

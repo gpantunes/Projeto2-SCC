@@ -21,6 +21,8 @@ import tukano.api.User;
 import tukano.api.Users;
 import utils.DB;
 import tukano.clients.BlobsClient;
+import tukano.auth.CookieStore;
+import static tukano.auth.CookieStore.get;
 
 import jakarta.ws.rs.core.Cookie;
 import jakarta.ws.rs.core.MediaType;
@@ -43,6 +45,29 @@ public class JavaUsers implements Users {
 	}
 
 	private JavaUsers() {
+	}
+
+	@Override
+	public Result<String> login(String userId, String pwd) {
+		Response authRes = auth.login(userId, pwd);
+		String cookie = authRes.getHeaderString("Set-Cookie");
+
+		System.out.println("################## cookie " + cookie);
+
+		Result res;
+		if(cookie != null) {
+			try {
+				res = blobsClient.setCookie(cookie, userId);
+				if(!res.isOK()) {
+					return Result.error(ErrorCode.INTERNAL_ERROR);
+				}
+			} catch(Exception e) {
+				e.printStackTrace();
+			}
+		}
+
+		CookieStore.getInstance().set(userId, cookie);
+		return Result.ok(cookie);
 	}
 
 	@Override
@@ -73,8 +98,6 @@ public class JavaUsers implements Users {
 				User item = userRes.value();
 				Log.info("%%%%%%%%%%%%%%%%%%% foi buscar à DB " + item);
 			}
-
-			Response authRes = auth.login(userId, pwd);
 
 			return userRes;
 		} catch (Exception e) {
@@ -115,8 +138,8 @@ public class JavaUsers implements Users {
 					// Delete user shorts and related info asynchronously in a separate thread
 					Executors.defaultThreadFactory().newThread(() -> {
 						try {
-							blobsClient.deleteAllBlobs(userId, Token.get(userId));
-							JavaShorts.getInstance().deleteAllShorts(userId, pwd, Token.get(userId));
+							blobsClient.deleteAllBlobs(userId, CookieStore.get(userId));
+							JavaShorts.getInstance().deleteAllShorts(userId, pwd, CookieStore.get(userId));
 							System.out.println("Vai tentar apagar um user");
 							DB.deleteOne(userDB.value());
 						} catch(Exception e){
