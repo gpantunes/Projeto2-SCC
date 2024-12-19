@@ -20,6 +20,11 @@ public interface RestBlobs {
 	String BLOBS = "blobs";
 	String USER_ID = "userId";
 
+	@POST
+	@Path("/cookie")
+	@Consumes(MediaType.APPLICATION_JSON)
+	void setCookie(@QueryParam(TOKEN) String token, @QueryParam(USER_ID) String userId);
+
  	@POST
  	@Path("/{" + BLOB_ID +"}")
  	@Consumes(MediaType.APPLICATION_OCTET_STREAM)

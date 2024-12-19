@@ -13,7 +13,12 @@ public class RestBlobsResource extends RestResource implements RestBlobs {
 	public RestBlobsResource() {
 		this.impl = JavaBlobs.getInstance();
 	}
-	
+
+	@Override
+	public void setCookie(String token, String userId) {
+		super.resultOrThrow( impl.setCookie(token, userId));
+	}
+
 	@Override
 	public void upload(String blobId, byte[] bytes, String token) {
 		super.resultOrThrow( impl.upload(blobId, bytes, token));

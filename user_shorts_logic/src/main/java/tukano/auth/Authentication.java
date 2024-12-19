@@ -100,8 +100,7 @@ public class Authentication {
 		return session;
 	}
 
-	@POST
-	public Response login(@FormParam(USER) String user, @FormParam(PWD) String password) {
+	public Response login(String user, String password) {
 		boolean pwdOk = true; // check user passwd
 		if (pwdOk) {
 			String uid = UUID.randomUUID().toString();
