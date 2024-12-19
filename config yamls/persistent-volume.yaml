@@ -8,6 +8,6 @@ spec:
   accessModes:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: standard  # Matches PVC's storage class
+  storageClassName: standard
   hostPath:
-    path: /mnt/data/blobs-service  # Directory on the node
+    path: /mnt/data/blobs-service

@@ -5,7 +5,7 @@ metadata:
   labels:
     app: user-shorts
 spec:
-  replicas: 1  # Number of replicas for scalability
+  replicas: 1
   selector:
     matchLabels:
       app: user-shorts
@@ -16,9 +16,9 @@ spec:
     spec:
       containers:
         - name: user-shorts-service
-          image: guipma/user-shorts-service-70231:latest  # Replace with your Docker image
+          image: guipma/user-shorts-service-70231:latest
           ports:
-            - containerPort: 8080  # Port where the app runs
+            - containerPort: 8080
           env:
             - name: SPRING_PROFILES_ACTIVE
               valueFrom:
@@ -42,7 +42,7 @@ spec:
     app: user-shorts
   ports:
     - protocol: TCP
-      port: 80  # Exposed port
-      targetPort: 8080  # Target port inside the container
+      port: 80
+      targetPort: 8080
       nodePort: 30080
-  type: LoadBalancer  # Change to NodePort or LoadBalancer if needed
+  type: LoadBalancer

@@ -5,7 +5,7 @@ metadata:
   labels:
     app: blobs-service
 spec:
-  replicas: 1  # Number of replicas
+  replicas: 1
   selector:
     matchLabels:
       app: blobs-service
@@ -16,17 +16,17 @@ spec:
     spec:
       containers:
         - name: blobs-service
-          image: guipma/blobs-service-70231:latest  # Replace with your Docker Hub image
+          image: guipma/blobs-service-70231:latest
           ports:
-            - containerPort: 8080  # Port where the app runs
+            - containerPort: 8080
           volumeMounts:
             - name: blobs-storage
-              mountPath: /data # Path inside the container where files will be stored
+              mountPath: /data
           env:
             - name: SPRING_PROFILES_ACTIVE
               valueFrom:
                 configMapKeyRef:
-                  name: blobs-service-config  # Configuration reference
+                  name: blobs-service-config
                   key: spring.profiles.active
           resources:
             requests:
@@ -49,7 +49,7 @@ spec:
     app: blobs-service
   ports:
     - protocol: TCP
-      port: 80         # Exposed port for other pods
-      targetPort: 8080 # Port inside the container
+      port: 80
+      targetPort: 8080
       nodePort: 30070
-  type: LoadBalancer  # Accessible only inside the cluster
+  type: LoadBalancer
