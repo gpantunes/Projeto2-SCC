@@ -27,13 +27,17 @@ import tukano.impl.data.Following;
 import tukano.impl.data.Likes;
 import tukano.impl.rest.TukanoRestServer;
 import utils.DB;
+import tukano.auth.CookieStore;
+import static tukano.auth.CookieStore.get;
+
+
 
 public class JavaShorts implements Shorts {
 
     private static Logger Log = Logger.getLogger(JavaShorts.class.getName());
 
     private static Shorts instance;
-    private static BlobsClient blobsClient = new BlobsClient("http://blobs-logic-service.default.svc.cluster.local:8080");
+    private static BlobsClient blobsClient = new BlobsClient("http://blobs-service:80/tukano-1.0/rest");
 
     synchronized public static Shorts getInstance() {
         if (instance == null) {
@@ -97,8 +101,10 @@ public class JavaShorts implements Shorts {
 
                 // Delete associated blob
                 try {
-                    blobsClient.deleteBlob(shrt.getShortId(), Token.get());
+                    System.out.println("Vai chamar o delete blob do client");
+                    blobsClient.deleteBlob(shrt.getShortId(), CookieStore.get(shortId.split("\\+")[0]));
                 }catch (Exception e){
+                    e.printStackTrace();
                     return Result.error(INTERNAL_ERROR);
                 }
 
@@ -260,10 +266,6 @@ public class JavaShorts implements Shorts {
     public Result<Void> deleteAllShorts(String userId, String password, String token) {
         Log.info(() -> format("deleteAllShorts : userId = %s, password = %s, token = %s\n", userId, password, token));
 
-        if (!Token.isValid(token, userId)) {
-            return error(FORBIDDEN);
-        }
-
         // delete shorts
         Log.warning("Está a tentar apagar os shorts");
         var query1 = format("SELECT * FROM \"short\" s WHERE s.ownerId = '%s'", userId);
@@ -272,7 +274,7 @@ public class JavaShorts implements Shorts {
                 Short.class);
 
         for (Short s : data.value()) {
-            DB.deleteOne(s);
+            DB.deleteOne(s); //talvez seja melhor chamar o delete short
             Log.warning("Apagou 1 short");
         }
 

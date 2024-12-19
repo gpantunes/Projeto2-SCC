@@ -11,6 +11,7 @@ C:\Users\guipm\Projetos Uni\4º Ano\SCC_projects\Projeto2-SCC\user_shorts_logic\
 C:\Users\guipm\Projetos Uni\4º Ano\SCC_projects\Projeto2-SCC\user_shorts_logic\src\main\java\tukano\auth\cookies\RequestCookies.java
 C:\Users\guipm\Projetos Uni\4º Ano\SCC_projects\Projeto2-SCC\user_shorts_logic\src\main\java\tukano\auth\cookies\RequestCookiesCleanupFilter.java
 C:\Users\guipm\Projetos Uni\4º Ano\SCC_projects\Projeto2-SCC\user_shorts_logic\src\main\java\tukano\auth\cookies\RequestCookiesFilter.java
+C:\Users\guipm\Projetos Uni\4º Ano\SCC_projects\Projeto2-SCC\user_shorts_logic\src\main\java\tukano\auth\CookieStore.java
 C:\Users\guipm\Projetos Uni\4º Ano\SCC_projects\Projeto2-SCC\user_shorts_logic\src\main\java\tukano\auth\FakeRedisLayer.java
 C:\Users\guipm\Projetos Uni\4º Ano\SCC_projects\Projeto2-SCC\user_shorts_logic\src\main\java\tukano\auth\Session.java
 C:\Users\guipm\Projetos Uni\4º Ano\SCC_projects\Projeto2-SCC\user_shorts_logic\src\main\java\tukano\clients\BlobsClient.java
@@ -40,7 +41,3 @@ C:\Users\guipm\Projetos Uni\4º Ano\SCC_projects\Projeto2-SCC\user_shorts_logic\
 C:\Users\guipm\Projetos Uni\4º Ano\SCC_projects\Projeto2-SCC\user_shorts_logic\src\main\java\utils\Sleep.java
 C:\Users\guipm\Projetos Uni\4º Ano\SCC_projects\Projeto2-SCC\user_shorts_logic\src\main\java\utils\TLS.java
 C:\Users\guipm\Projetos Uni\4º Ano\SCC_projects\Projeto2-SCC\user_shorts_logic\src\main\java\utils\TryCatch.java
-C:\Users\guipm\Projetos Uni\4º Ano\SCC_projects\Projeto2-SCC\user_shorts_logic\src\main\test\test\Test.java
-C:\Users\guipm\Projetos Uni\4º Ano\SCC_projects\Projeto2-SCC\user_shorts_logic\src\main\test\tukano\clients\rest\RestClient.java
-C:\Users\guipm\Projetos Uni\4º Ano\SCC_projects\Projeto2-SCC\user_shorts_logic\src\main\test\tukano\clients\rest\RestShortsClient.java
-C:\Users\guipm\Projetos Uni\4º Ano\SCC_projects\Projeto2-SCC\user_shorts_logic\src\main\test\tukano\clients\rest\RestUsersClient.java

@@ -7,8 +7,6 @@ import static tukano.api.Result.error;
 import static tukano.api.Result.errorOrResult;
 import static tukano.api.Result.errorOrValue;
 
-//import static tukano.auth.Authentication.login;
-
 //import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -17,21 +15,28 @@ import com.azure.cosmos.CosmosException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import tukano.api.Result;
 import tukano.api.Result.ErrorCode;
-//import tukano.auth.Authentication;
+import tukano.auth.Authentication;
 import tukano.impl.rest.TukanoRestServer;
 import tukano.api.User;
 import tukano.api.Users;
 import utils.DB;
 import tukano.clients.BlobsClient;
+import tukano.auth.CookieStore;
+import static tukano.auth.CookieStore.get;
+
+import jakarta.ws.rs.core.Cookie;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.NewCookie;
+import jakarta.ws.rs.core.Response;
 
 public class JavaUsers implements Users {
 
 	private static Logger Log = Logger.getLogger(JavaUsers.class.getName());
 
 	private static Users instance;
-	private BlobsClient blobsClient = new BlobsClient("http://blobs-logic-service.default.svc.cluster.local:8080");
+	private static BlobsClient blobsClient = new BlobsClient("http://blobs-service:80/tukano-1.0/rest");
 
-	//private static final Authentication auth = new Authentication();
+	private static Authentication auth = new Authentication();
 
 	synchronized public static Users getInstance() {
 		if (instance == null)
@@ -40,6 +45,29 @@ public class JavaUsers implements Users {
 	}
 
 	private JavaUsers() {
+	}
+
+	@Override
+	public Result<String> login(String userId, String pwd) {
+		Response authRes = auth.login(userId, pwd);
+		String cookie = authRes.getHeaderString("Set-Cookie");
+
+		System.out.println("################## cookie " + cookie);
+
+		Result res;
+		if(cookie != null) {
+			try {
+				res = blobsClient.setCookie(cookie, userId);
+				if(!res.isOK()) {
+					return Result.error(ErrorCode.INTERNAL_ERROR);
+				}
+			} catch(Exception e) {
+				e.printStackTrace();
+			}
+		}
+
+		CookieStore.getInstance().set(userId, cookie);
+		return Result.ok(cookie);
 	}
 
 	@Override
@@ -52,7 +80,6 @@ public class JavaUsers implements Users {
 		Result<String> res;
 
 		res = errorOrValue(DB.insertOne(user), user.getUserId());
-
 		return res;
 	}
 
@@ -63,22 +90,16 @@ public class JavaUsers implements Users {
 		if (userId == null)
 			return error(BAD_REQUEST);
 
-
 		try {
-				Result<User> userRes;
+			Result<User> userRes;
+			userRes = validatedUserOrError(DB.getOne(userId, User.class), pwd);
 
-				userRes = validatedUserOrError(DB.getOne(userId, User.class), pwd);
+			if (userRes.isOK()) {
+				User item = userRes.value();
+				Log.info("%%%%%%%%%%%%%%%%%%% foi buscar à DB " + item);
+			}
 
-				if (userRes.isOK()) {
-					User item = userRes.value();
-					Log.info("%%%%%%%%%%%%%%%%%%% foi buscar ao cosmos " + item);
-				}
-
-				return userRes;
-
-
-		} catch (CosmosException e) {
-			return Result.error(errorCodeFromStatus(e.getStatusCode()));
+			return userRes;
 		} catch (Exception e) {
 			e.printStackTrace();
 			return Result.error(ErrorCode.INTERNAL_ERROR);
@@ -116,11 +137,14 @@ public class JavaUsers implements Users {
 				user -> {
 					// Delete user shorts and related info asynchronously in a separate thread
 					Executors.defaultThreadFactory().newThread(() -> {
-						//JavaBlobs.getInstance().deleteAllBlobs(userId, Token.get(userId));
-						blobsClient.deleteAllBlobs(userId, Token.get(userId));
-						JavaShorts.getInstance().deleteAllShorts(userId, pwd, Token.get(userId));
-						System.out.println("Vai tentar apagar um user");
-						DB.deleteOne(userDB);
+						try {
+							blobsClient.deleteAllBlobs(userId, CookieStore.get(userId));
+							JavaShorts.getInstance().deleteAllShorts(userId, pwd, CookieStore.get(userId));
+							System.out.println("Vai tentar apagar um user");
+							DB.deleteOne(userDB.value());
+						} catch(Exception e){
+							e.printStackTrace();
+						}
 					}).start();
 
 					return userDB;
@@ -132,10 +156,7 @@ public class JavaUsers implements Users {
 		Log.info(() -> format("searchUsers : patterns = %s\n", pattern));
 
 		var query = format("SELECT * FROM users u WHERE UPPER(u.id) LIKE '%%%s%%'", pattern.toUpperCase());
-
-
 			try {
-
 				Result<List<User>> data;
 
 					query = String.format("SELECT * FROM \"user\" u WHERE UPPER(u.userId) LIKE '%%%s%%'",
@@ -146,7 +167,6 @@ public class JavaUsers implements Users {
 							.toList());
 
 					Log.info("Foi buscar os users à CosmosDB");
-
 
 				return data;
 
