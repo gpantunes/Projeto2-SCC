@@ -19,6 +19,9 @@ spec:
           image: guipma/blobs-service-70231:latest  # Replace with your Docker Hub image
           ports:
             - containerPort: 8080  # Port where the app runs
+          volumeMounts:
+            - name: blobs-storage
+              mountPath: /data # Path inside the container where files will be stored
           env:
             - name: SPRING_PROFILES_ACTIVE
               valueFrom:
@@ -32,6 +35,10 @@ spec:
             limits:
               memory: "512Mi"
               cpu: "1000m"
+      volumes:
+        - name: blobs-storage
+          persistentVolumeClaim:
+            claimName: blobs-pvc
 ---
 apiVersion: v1
 kind: Service
